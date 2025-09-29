@@ -1,6 +1,7 @@
 import { IntegrationDefinition, IntegrationDefinitionProps, z } from '@botpress/sdk'
 import hitl from './bp_modules/hitl'
 import { configuration, channels, states, events, actions } from './src/definitions'
+import packageJson from './package.json'
 
 export const user = {
   tags: {
@@ -11,9 +12,9 @@ export const user = {
 } satisfies IntegrationDefinitionProps['user']
 
 export default new IntegrationDefinition({
-  name: 'hitl-salesforce',
+  name: packageJson.name,
   title: 'SalesForce Messaging (Alpha)',
-  version: '1.2.0',
+  version: packageJson.version,
   icon: 'icon.svg',
   description:
     'This integration allows your bot to interact with Salesforce Messaging, this version uses the HITL Interface',
