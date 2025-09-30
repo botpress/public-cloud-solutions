@@ -8,6 +8,7 @@ import type {
   ParticipantChangedMessagingTrigger,
   TriggerPayload,
 } from './triggers'
+import { parseMessagesToProcess } from './utils'
 import { IntegrationProps } from '.botpress'
 
 export const handler: IntegrationProps['handler'] = async (props) => {
@@ -49,41 +50,46 @@ export const handler: IntegrationProps['handler'] = async (props) => {
         return
       }
 
-      try {
-        messagingTrigger.data = JSON.parse(messagingTrigger?.data)
-      } catch {
-        return /* Ignore non json data */
+      // Parse messages to process using utility function
+      const messagesToProcess = parseMessagesToProcess(messagingTrigger)
+      
+      // If no valid messages to process, return early
+      if (messagesToProcess.length === 0) {
+        return
       }
 
-      switch (messagingTrigger.event) {
-        case 'CONVERSATION_MESSAGE':
-          await executeOnConversationMessage({
-            messagingTrigger: messagingTrigger as MessageMessagingTrigger,
-            conversation,
-            ...props,
-          })
-          break
-        case 'CONVERSATION_PARTICIPANT_CHANGED':
-          await executeOnParticipantChanged({
-            messagingTrigger: messagingTrigger as ParticipantChangedMessagingTrigger,
-            ctx,
-            conversation,
-            client,
-            logger,
-          })
-          break
-        case 'CONVERSATION_CLOSE_CONVERSATION':
-          logger.forBot().warn('Got CONVERSATION_CLOSE_CONVERSATION')
-          await executeOnConversationClose({
-            messagingTrigger: messagingTrigger as CloseConversationMessagingTrigger,
-            ctx,
-            conversation,
-            client,
-            logger,
-          })
-          break
-        default:
-          logger.forBot().warn('Got unhandled event: ' + trigger.payload.event)
+      // Process each message through the switch condition
+      for (const messageTrigger of messagesToProcess) {
+        switch (messageTrigger.event) {
+          case 'CONVERSATION_MESSAGE':
+            await executeOnConversationMessage({
+              messagingTrigger: messageTrigger as MessageMessagingTrigger,
+              conversation,
+              ...props,
+            })
+            break
+          case 'CONVERSATION_PARTICIPANT_CHANGED':
+            await executeOnParticipantChanged({
+              messagingTrigger: messageTrigger as ParticipantChangedMessagingTrigger,
+              ctx,
+              conversation,
+              client,
+              logger,
+            })
+            break
+          case 'CONVERSATION_CLOSE_CONVERSATION':
+            logger.forBot().warn('Got CONVERSATION_CLOSE_CONVERSATION')
+            await executeOnConversationClose({
+              messagingTrigger: messageTrigger as CloseConversationMessagingTrigger,
+              ctx,
+              conversation,
+              client,
+              logger,
+            })
+            break
+          default:
+            logger.forBot().warn('Got unhandled event: ' + messageTrigger.event)
+        }
       }
       return
     case 'ERROR':

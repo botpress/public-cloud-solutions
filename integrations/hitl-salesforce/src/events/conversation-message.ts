@@ -75,6 +75,19 @@ export const executeOnConversationMessage = async ({
       })
       break
     case 'Attachments':
+      // Send text message first if it exists
+      if (entryPayload.abstractMessage.staticContent.text) {
+        await createMessage({
+          type: 'text',
+          payload: {
+            text: `${(ctx.configuration.showAgentName && senderRole === 'Agent' && `${senderDisplayName}: `) || ''}${
+              entryPayload.abstractMessage.staticContent.text
+            }`,
+          },
+        })
+      }
+      
+      // Then send attachments
       for (const attachment of entryPayload.abstractMessage.staticContent.attachments) {
         if (attachment.mimeType.startsWith('image/')) {
           await createMessage({
