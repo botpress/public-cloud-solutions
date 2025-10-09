@@ -72,3 +72,100 @@ export const parseMessagesToProcess = (messagingTrigger: any): any[] => {
 
   return messagesToProcess
 }
+
+/**
+ * Processes conversation entries to identify and handle missed events
+ * This function converts conversation entries into the same format as SSE events
+ * so they can be processed by the existing event handlers
+ * 
+ * @param conversationEntries Array of conversation entries from Salesforce API
+ * @param lastProcessedTimestamp Timestamp of the last processed entry (optional)
+ * @returns Array of events that were missed and need to be processed
+ */
+export const processMissedEventsFromEntries = (
+  conversationEntries: any[], 
+  lastProcessedTimestamp?: number
+): any[] => {
+  const missedEvents: any[] = []
+
+  if (!conversationEntries || conversationEntries.length === 0) {
+    return missedEvents
+  }
+
+  // Sort entries by timestamp (oldest first) to process them in chronological order
+  const sortedEntries = [...conversationEntries].sort((a, b) => 
+    (a.transcriptedTimestamp || 0) - (b.transcriptedTimestamp || 0)
+  )
+
+  for (const entry of sortedEntries) {
+    const entryTimestamp = entry.transcriptedTimestamp || 0
+    
+    // Skip entries that were already processed
+    if (lastProcessedTimestamp && entryTimestamp <= lastProcessedTimestamp) {
+      continue
+    }
+
+    // Convert entry to SSE-like event format
+    const eventType = mapEntryTypeToEventType(entry.entryType)
+    
+    if (eventType) {
+      const eventData = {
+        // Add the missing fields to match EventData structure
+        channelPlatformKey: 'salesforce',
+        channelType: 'embedded_messaging',
+        channelAddressIdentifier: '',
+        conversationId: '', // This will be set by the handler
+        conversationEntry: {
+          entryType: entry.entryType,
+          entryPayload: entry.entryPayload,
+          sender: entry.sender,
+          senderDisplayName: entry.senderDisplayName,
+          identifier: entry.identifier,
+          transcriptedTimestamp: entry.transcriptedTimestamp,
+          clientTimestamp: entry.clientTimestamp,
+          // Add missing fields with default values
+          contextParamMap: {},
+          visibilityStrategy: 'All',
+          relatedRecords: [],
+          clientDuration: 0,
+        }
+      }
+
+      const missedEvent = {
+        event: eventType,
+        data: eventData,
+        // Add metadata to identify this as a missed event
+        _isMissedEvent: true,
+        _originalTimestamp: entryTimestamp,
+      }
+
+      missedEvents.push(missedEvent)
+    }
+  }
+
+  return missedEvents
+}
+
+/**
+ * Maps Salesforce conversation entry types to our internal event types
+ * 
+ * @param entryType The entry type from Salesforce conversation entries
+ * @returns The corresponding event type for our handlers, or null if not supported
+ */
+const mapEntryTypeToEventType = (entryType: string): string | null => {
+  switch (entryType) {
+    case 'ParticipantChanged':
+      return 'CONVERSATION_PARTICIPANT_CHANGED'
+    case 'Message':
+      return 'CONVERSATION_MESSAGE'
+    case 'ConversationClosed':
+      return 'CONVERSATION_CLOSE_CONVERSATION'
+    case 'RoutingResult':
+      // RoutingResult entries are typically handled internally and don't need processing
+      return null
+    default:
+      // Log unknown entry types for debugging
+      console.warn(`Unknown conversation entry type: ${entryType}`)
+      return null
+  }
+}

@@ -342,6 +342,50 @@ class MessagingApi {
       throw new RuntimeError('Failed to get conversation routing status: ' + error.message)
     }
   }
+
+  /**
+   * Retrieves conversation entries from Salesforce MIAW API
+   * This is used to check for missed events when SSE connection is restored
+   *
+   * @param conversationId The conversation ID to get entries for
+   * @returns Promise resolving to conversation entries
+   * @throws RuntimeError if the API call fails or session is not initialized
+   */
+  public async getConversationEntries(conversationId: string): Promise<any> {
+    if (!this._session?.accessToken) {
+      throw new RuntimeError('Tried to get conversation entries for a session that is not initialized yet')
+    }
+
+    try {
+      this._logger.forBot().debug('Getting conversation entries', {
+        conversationId,
+        url: `${this._apiBaseUrl}/conversation/${conversationId}/entries`,
+        hasAccessToken: !!this._session?.accessToken,
+      })
+
+      const { data } = await this._client.get(`/conversation/${conversationId}/entries`, {
+        headers: {
+          'content-type': 'application/json',
+          Authorization: `Bearer ${this._session.accessToken}`,
+        },
+      })
+
+      this._logger.forBot().debug('Received conversation entries response', {
+        conversationId,
+        entriesCount: data.conversationEntries?.length || 0,
+        fullResponse: data,
+      })
+
+      return data
+    } catch (thrown: unknown) {
+      const error = thrown instanceof Error ? thrown : new Error(String(thrown))
+      this._logger.forBot().error('Failed to get conversation entries: ' + error.message, {
+        conversationId,
+        error: thrown,
+      })
+      throw new RuntimeError('Failed to get conversation entries: ' + error.message)
+    }
+  }
 }
 
 export const getSalesforceClient = (logger: Logger, config: SFMessagingConfig, session: LiveAgentSession = {}) =>
