@@ -357,23 +357,11 @@ class MessagingApi {
     }
 
     try {
-      this._logger.forBot().debug('Getting conversation entries', {
-        conversationId,
-        url: `${this._apiBaseUrl}/conversation/${conversationId}/entries`,
-        hasAccessToken: !!this._session?.accessToken,
-      })
-
       const { data } = await this._client.get(`/conversation/${conversationId}/entries`, {
         headers: {
           'content-type': 'application/json',
           Authorization: `Bearer ${this._session.accessToken}`,
         },
-      })
-
-      this._logger.forBot().debug('Received conversation entries response', {
-        conversationId,
-        entriesCount: data.conversationEntries?.length || 0,
-        fullResponse: data,
       })
 
       return data

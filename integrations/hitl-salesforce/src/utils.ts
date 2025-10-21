@@ -134,8 +134,6 @@ export const processMissedEventsFromEntries = (
       const missedEvent = {
         event: eventType,
         data: eventData,
-        // Add metadata to identify this as a missed event
-        _isMissedEvent: true,
         _originalTimestamp: entryTimestamp,
       }
 
