@@ -45,6 +45,10 @@ export const executeOnParticipantChanged = async ({
 
     switch (entry.operation) {
       case 'remove':
+        if(ctx.configuration?.keepAliveOnInactive) {
+          return
+        }
+
         // Check routing status to determine if this is a transfer or actual agent removal
         // This prevents conversations from being closed when agents are transferred
         // For TRANSFER status, send transfer message to user
