@@ -89,10 +89,6 @@ const processMissedEventsOnRestore = async (props: any, conversation: any): Prom
   const { client, ctx, logger } = props
   
   try {
-    logger.forBot().info('Checking for missed events after SSE restoration', {
-      conversationId: conversation.id,
-      salesforceConversationId: conversation.tags.id,
-    })
 
     const salesforceClient = await getSalesforceClientWithBotpress({ client, ctx, conversation, logger })
     const lastProcessedTimestamp = await getLastProcessedTimestamp(client, conversation.id)
@@ -101,11 +97,6 @@ const processMissedEventsOnRestore = async (props: any, conversation: any): Prom
     const entriesResponse = await salesforceClient.getConversationEntries(conversation.tags.id as string)
     const conversationEntries = entriesResponse.conversationEntries || []
     
-    logger.forBot().debug('Retrieved conversation entries', {
-      conversationId: conversation.id,
-      entriesCount: conversationEntries.length,
-      lastProcessedTimestamp,
-    })
 
     // Process missed events
     const missedEvents = processMissedEventsFromEntries(conversationEntries, lastProcessedTimestamp)
@@ -142,11 +133,6 @@ const processMissedEventsOnRestore = async (props: any, conversation: any): Prom
       if (latestTimestamp > (lastProcessedTimestamp || 0)) {
         await updateLastProcessedTimestamp(client, conversation.id, latestTimestamp)
       }
-    } else {
-      logger.forBot().debug('No missed events found', {
-        conversationId: conversation.id,
-        lastProcessedTimestamp,
-      })
     }
   } catch (error) {
     logger.forBot().error('Failed to process missed events on restore', {
