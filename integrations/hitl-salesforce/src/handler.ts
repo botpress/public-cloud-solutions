@@ -68,7 +68,6 @@ const processEvent = async (eventTrigger: any, conversation: any, props: any): P
       })
       break
     case 'CONVERSATION_CLOSE_CONVERSATION':
-      logger.forBot().warn('Got CONVERSATION_CLOSE_CONVERSATION')
       await executeOnConversationClose({
         messagingTrigger: eventTrigger as CloseConversationMessagingTrigger,
         ctx,
