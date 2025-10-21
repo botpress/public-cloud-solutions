@@ -21,7 +21,13 @@ export const executeOnParticipantChanged = async ({
   let entryPayload: ParticipantChangedDataPayload
 
   try {
-    entryPayload = JSON.parse(messagingTrigger.data.conversationEntry.entryPayload) as ParticipantChangedDataPayload
+    // Handle both string and object formats for entryPayload
+    if (typeof messagingTrigger.data.conversationEntry.entryPayload === 'string') {
+      entryPayload = JSON.parse(messagingTrigger.data.conversationEntry.entryPayload) as ParticipantChangedDataPayload
+    } else {
+      // Already an object (from conversation entries API)
+      entryPayload = messagingTrigger.data.conversationEntry.entryPayload as ParticipantChangedDataPayload
+    }
   } catch (e) {
     logger.forBot().error('Could not parse entry payload', e)
     return
@@ -39,6 +45,10 @@ export const executeOnParticipantChanged = async ({
 
     switch (entry.operation) {
       case 'remove':
+        if(ctx.configuration?.keepAliveOnInactive) {
+          return
+        }
+
         // Check routing status to determine if this is a transfer or actual agent removal
         // This prevents conversations from being closed when agents are transferred
         // For TRANSFER status, send transfer message to user

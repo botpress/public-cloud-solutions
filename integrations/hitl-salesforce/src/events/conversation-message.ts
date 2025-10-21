@@ -19,7 +19,13 @@ export const executeOnConversationMessage = async ({
   let entryPayload: MessageDataPayload
 
   try {
-    entryPayload = JSON.parse(messagingTrigger.data.conversationEntry.entryPayload) as MessageDataPayload
+    // Handle both string and object formats for entryPayload
+    if (typeof messagingTrigger.data.conversationEntry.entryPayload === 'string') {
+      entryPayload = JSON.parse(messagingTrigger.data.conversationEntry.entryPayload) as MessageDataPayload
+    } else {
+      // Already an object (from conversation entries API)
+      entryPayload = messagingTrigger.data.conversationEntry.entryPayload as MessageDataPayload
+    }
   } catch (e) {
     logger.forBot().error('Could not parse entry payload', e)
     return
@@ -75,6 +81,19 @@ export const executeOnConversationMessage = async ({
       })
       break
     case 'Attachments':
+      // Send text message first if it exists
+      if (entryPayload.abstractMessage.staticContent.text) {
+        await createMessage({
+          type: 'text',
+          payload: {
+            text: `${(ctx.configuration.showAgentName && senderRole === 'Agent' && `${senderDisplayName}: `) || ''}${
+              entryPayload.abstractMessage.staticContent.text
+            }`,
+          },
+        })
+      }
+      
+      // Then send attachments
       for (const attachment of entryPayload.abstractMessage.staticContent.attachments) {
         if (attachment.mimeType.startsWith('image/')) {
           await createMessage({
