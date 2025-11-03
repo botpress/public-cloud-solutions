@@ -8,7 +8,7 @@ import type {
   ParticipantChangedMessagingTrigger,
   TriggerPayload,
 } from './triggers'
-import { parseMessagesToProcess, processMissedEventsFromEntries } from './utils'
+import { parseMessagesToProcess, processMissedEventsFromEntries, parseEntryPayload } from './utils'
 import { IntegrationProps } from '.botpress'
 
 /**
@@ -75,6 +75,15 @@ const processEvent = async (eventTrigger: any, conversation: any, props: any): P
         client,
         logger,
       })
+      break
+    case 'CONVERSATION_SESSION_STATUS_CHANGED':
+      // Check if session status is "Ended" - if so, close the conversation
+      const sessionPayload = parseEntryPayload<{ sessionStatus?: string }>(
+        eventTrigger.data?.conversationEntry?.entryPayload
+      )
+      if (sessionPayload?.sessionStatus === 'Ended') {
+        await closeConversation({ conversation, ctx, client, logger })
+      }
       break
     default:
       logger.forBot().warn('Got unhandled event: ' + eventTrigger.event)

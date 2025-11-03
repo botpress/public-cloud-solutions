@@ -1,4 +1,5 @@
 import { MessageMessagingTrigger, MessageDataPayload, RichLinkStaticContent } from '../triggers'
+import { parseEntryPayload } from '../utils'
 import * as bp from '.botpress'
 
 export const executeOnConversationMessage = async ({
@@ -16,18 +17,12 @@ export const executeOnConversationMessage = async ({
     senderDisplayName,
   } = messagingTrigger.data.conversationEntry
 
-  let entryPayload: MessageDataPayload
+  const entryPayload = parseEntryPayload<MessageDataPayload>(
+    messagingTrigger.data.conversationEntry.entryPayload
+  )
 
-  try {
-    // Handle both string and object formats for entryPayload
-    if (typeof messagingTrigger.data.conversationEntry.entryPayload === 'string') {
-      entryPayload = JSON.parse(messagingTrigger.data.conversationEntry.entryPayload) as MessageDataPayload
-    } else {
-      // Already an object (from conversation entries API)
-      entryPayload = messagingTrigger.data.conversationEntry.entryPayload as MessageDataPayload
-    }
-  } catch (e) {
-    logger.forBot().error('Could not parse entry payload', e)
+  if (!entryPayload) {
+    logger.forBot().error('Could not parse entry payload')
     return
   }
 

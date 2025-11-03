@@ -25,6 +25,30 @@ export const getFileExtensionFromUrl = (fileUrl: string): string => {
   return url.pathname.includes('.') ? (url.pathname.split('.').pop()?.toLowerCase() ?? '') : ''
 }
 
+/**
+ * Parses entryPayload from string to object if needed
+ * Handles both string and object formats for entryPayload
+ * 
+ * @param entryPayload The entry payload which may be a JSON string or already an object
+ * @returns The parsed payload object, or null if parsing fails
+ */
+export const parseEntryPayload = <T = any>(entryPayload: string | object | undefined): T | null => {
+  if (!entryPayload) {
+    return null
+  }
+
+  try {
+    if (typeof entryPayload === 'string') {
+      return JSON.parse(entryPayload) as T
+    } else {
+      // Already an object (from conversation entries API)
+      return entryPayload as T
+    }
+  } catch {
+    return null
+  }
+}
+
 export const parseMessagesToProcess = (messagingTrigger: any): any[] => {
   const messagesToProcess: any[] = []
 
@@ -158,6 +182,8 @@ const mapEntryTypeToEventType = (entryType: string): string | null => {
       return 'CONVERSATION_MESSAGE'
     case 'ConversationClosed':
       return 'CONVERSATION_CLOSE_CONVERSATION'
+    case 'SessionStatusChanged':
+      return 'CONVERSATION_SESSION_STATUS_CHANGED'
     case 'RoutingResult':
       // RoutingResult entries are typically handled internally and don't need processing
       return null

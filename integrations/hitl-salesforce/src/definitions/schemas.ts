@@ -29,12 +29,7 @@ export const SFMessagingConfigSchema = z.object({
     .optional()
     .describe(
       'Message that will be sent to the user when the conversation is being transferred. Leave empty to disable transfer messages.',
-    ),
-  keepAliveOnInactive: z
-    .boolean()
-    .title('Keep HITL Session Alive when inactive')
-    .optional()
-    .describe('Keep the HITL session alive even when the conversation is inactive on Salesforce'),
+    )
 })
 
 export type SFMessagingConfig = z.infer<typeof SFMessagingConfigSchema>
