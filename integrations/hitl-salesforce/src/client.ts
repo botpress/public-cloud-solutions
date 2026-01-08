@@ -281,13 +281,38 @@ class MessagingApi {
   }
 
   public async closeConversation() {
+
+    this._logger.forBot().debug('Manually closing conversation on Salesforce using API: ' + this._session?.conversationId)
+
     if (!this._session) {
       throw new RuntimeError('Tried to end a conversation that is not initialized yet')
     }
 
-    await this._client.delete(
-      `/conversation/${this._session.conversationId}?esDeveloperName=${this._config.DeveloperName}`,
-    )
+    try {
+      await this._client.delete(
+        `/conversation/${this._session.conversationId}?esDeveloperName=${this._config.DeveloperName}`,
+      )
+    } catch (thrown: unknown) {
+      if (isAxiosError(thrown)) {
+        const axiosError = thrown as AxiosError
+        if (axiosError.response?.status === 409) {
+          const responseData = axiosError.response.data as any
+          this._logger.forBot().info('Attempted to close conversation that is already closed', {
+            conversationId: this._session?.conversationId,
+            status: 409,
+            errorCode: responseData.errorCode,
+            message: responseData.message,
+            error: axiosError,
+          })
+          return
+        }
+      }
+
+      const error = thrown instanceof Error ? thrown : new Error(String(thrown))
+      this._logger.forBot().error('Failed to close conversation on Salesforce: ' + error.message)
+
+      throw thrown
+    }
   }
 
   /**

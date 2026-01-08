@@ -109,6 +109,8 @@ export const stopHitl: bp.IntegrationProps['actions']['stopHitl'] = async ({ ctx
     throw new RuntimeError("Conversation doesn't exist")
   }
 
+  logger.forBot().debug('stopHitl: called for conversation: ' + conversation.id)
+
   await closeConversation({ conversation, ctx, client, logger, force: true })
 
   return {}
